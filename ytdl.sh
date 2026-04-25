@@ -6,12 +6,18 @@
 
 set -euo pipefail
 
+# ── Interruption propre (Ctrl+C) ─────────────────────────────
+trap 'echo -e "\n${YELLOW}[!]${RESET} Interruption. À bientôt !\n"; exit 130' INT
+
+# ── PATH : inclure ~/.local/bin pour yt-dlp installé via pip ─
+export PATH="${HOME}/.local/bin:${PATH}"
+
 # ── Couleurs ─────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 
 # ── Dossier de destination par défaut ────────────────────────
-DEST="${HOME}/Videos/YouTube"
+DEST="${HOME}/Téléchargements/Youtube"
 
 # ── Fonctions utilitaires ─────────────────────────────────────
 info()    { echo -e "${CYAN}[•]${RESET} $*"; }
@@ -44,6 +50,18 @@ check_deps() {
     fi
   fi
 
+  info "Vérification des mises à jour de yt-dlp..."
+  if yt-dlp -U --no-progress 2>&1 | grep -q "up-to-date"; then
+    success "yt-dlp déjà à jour ($(yt-dlp --version))."
+  else
+    success "yt-dlp mis à jour ($(yt-dlp --version))."
+  fi
+
+  if ! command -v node &>/dev/null && ! command -v deno &>/dev/null; then
+    warn "Runtime JavaScript absent — certains formats peuvent manquer."
+    warn "Installez Node.js : sudo apt install nodejs"
+  fi
+
   if ! command -v ffmpeg &>/dev/null; then
     warn "ffmpeg absent — conversion audio limitée."
     warn "Installez-le avec : sudo apt install ffmpeg"
@@ -57,6 +75,10 @@ get_url() {
   read -rp "  → " URL
   if [[ -z "$URL" ]]; then
     error "Aucune URL saisie."
+    exit 1
+  fi
+  if [[ ! "$URL" =~ ^https?:// ]]; then
+    error "URL invalide. Elle doit commencer par http:// ou https://"
     exit 1
   fi
 }
@@ -98,7 +120,10 @@ do_download() {
   mkdir -p "$DEST"
   info "Téléchargement vers : ${BOLD}$DEST${RESET}"
   echo ""
-  yt-dlp "${args[@]}" -o "${DEST}/%(title)s.%(ext)s" "$URL"
+  if ! yt-dlp "${args[@]}" -o "${DEST}/%(title)s.%(ext)s" "$URL"; then
+    error "Échec du téléchargement. Vérifiez l'URL ou la connexion."
+    return 1
+  fi
   echo ""
   success "Terminé ! Fichier(s) disponible(s) dans : $DEST"
 }

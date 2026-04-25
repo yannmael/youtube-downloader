@@ -17,7 +17,7 @@ depuis le terminal, avec un menu interactif.
 - Pas de dépendances sauf yt-dlp et ffmpeg
 - Installation automatique de yt-dlp si absent
 - Compatible Ubuntu 24.04
-- Dossier de destination par défaut : ~/Videos/YouTube
+- Dossier de destination par défaut : ~/Téléchargements/Youtube
 
 ## Ce que le script ne fait PAS
 - Pas d'interface graphique
